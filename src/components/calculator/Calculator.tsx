@@ -1,7 +1,7 @@
 import { keyMap } from '@/constants/calculatorKeys'
-import { calculation } from '@/helpers/calculation'
+import { calculation, lastIsCloseBucket, lastIsNumber, lastIsOperator } from '@/helpers/calculation'
 import { isValidateKey } from '@/helpers/isValidateKey'
-import { FC, HTMLAttributes, useCallback, useEffect, useReducer, useState } from 'react'
+import { FC, HTMLAttributes, useCallback, useEffect, useRef, useState } from 'react'
 import styled from 'styled-components'
 import Button from '../buttons/Button'
 
@@ -53,61 +53,6 @@ const DisplayResult = styled.div`
     }
   }
 `
-
-const reducer = (state: string, action: { type: string; payload?: any }): string => {
-  const { type, payload } = action
-  const lastIsNumber = (): boolean => {
-    if (state === '') return false
-    return state.match(/\d+$/g) ? true : false
-  }
-  const lastIsOperator = (): boolean => {
-    if (state === '') return false
-    return state.match(/[\*\-\+\/]\s$/) ? true : false
-  }
-  const lastIsCloseBucket = (): boolean => {
-    return state.match(/\)\s$/) ? true : false
-  }
-  switch (type) {
-    case '+':
-    case '-':
-    case '/':
-    case '*': {
-      return lastIsNumber() ? `${state} ${type} ` : lastIsCloseBucket() ? `${state}${type} ` : state
-    }
-    case '(': {
-      return state === '' || lastIsOperator()
-        ? `${state}${type} `
-        : lastIsNumber()
-        ? `${state} * ${type} `
-        : state
-    }
-    case ')': {
-      return lastIsNumber() ? `${state} ${type} ` : state.match(/\)\s$/) ? `${state}${type}` : state
-    }
-    case 'backspace': {
-      let str = state
-      if (str[str.length - 1] === ' ') str = str.slice(0, str.length - 3)
-      else str = str.slice(0, str.length - 1)
-      return str
-    }
-    case 'enter': {
-      const val = calculation(state)
-      return val
-      // return `${state} = ${val}`;
-    }
-    case 'escape': {
-      return ''
-    }
-    case '_': {
-      return state
-    }
-    default:
-      return lastIsCloseBucket() ? `${state} * ${type}` : `${state}${type}`
-  }
-}
-
-const initState = ''
-
 const Calculator: FC<CalCulatorProps> = ({
   variant = 'normal',
   calProps,
@@ -115,16 +60,85 @@ const Calculator: FC<CalCulatorProps> = ({
   keyProps,
 }) => {
   const keys = keyMap[variant]
-  const [val, dispatchVal] = useReducer(reducer, initState)
-  const [answer, setAnswer] = useState('')
+  const [val, setVal] = useState('')
   const [valHistory, setValHistory] = useState([''])
-  const updateResult = useCallback(({ code = '', key = '' }) => {
-    const isValid = isValidateKey({ code })
-    if (!isValid) return
-    dispatchVal({
-      type: key.toLowerCase(),
-    })
-  }, [])
+  const historyRef = useRef<HTMLInputElement>(null)
+  const inputRef = useRef<HTMLInputElement>(null)
+  const updateResult = useCallback(
+    ({ code = '', key = '' }) => {
+      const isValid = isValidateKey({ code })
+      if (!isValid) return
+      const type = key.toLowerCase()
+      let temp = val
+      switch (type) {
+        case '+':
+        case '-':
+        case '/':
+        case '*': {
+          temp = lastIsNumber(temp)
+            ? `${temp} ${type} `
+            : lastIsCloseBucket(temp)
+            ? `${temp}${type} `
+            : temp
+          break
+        }
+        case '(': {
+          temp =
+            temp === '' || lastIsOperator(temp)
+              ? `${temp}${type} `
+              : lastIsNumber(temp)
+              ? `${temp} * ${type} `
+              : temp
+          break
+        }
+        case ')': {
+          temp = lastIsNumber(temp)
+            ? `${temp} ${type} `
+            : temp.match(/\)\s$/)
+            ? `${temp}${type}`
+            : temp
+          break
+        }
+        case 'backspace': {
+          let str = temp
+          if (str[str.length - 1] === ' ') str = str.slice(0, str.length - 3)
+          else str = str.slice(0, str.length - 1)
+          temp = str
+          break
+        }
+        case 'enter': {
+          const ans = calculation(temp)
+          setValHistory((state) => [...state, temp + ' = ' + ans])
+          temp = ans
+          break
+        }
+        case 'escape': {
+          temp = ''
+          break
+        }
+        case '_': {
+          break
+        }
+        case '.': {
+          temp = lastIsNumber(temp) ? `${temp}.` : temp
+          break
+        }
+        default:
+          if (valHistory[valHistory.length - 1]?.split(' = ')[1] === val) {
+            temp = `${type}`
+          } else {
+            temp = lastIsCloseBucket(temp) ? `${temp} * ${type}` : `${temp}${type}`
+          }
+          break
+      }
+      setVal(temp)
+      const history = historyRef.current
+      const input = inputRef.current
+      history.scrollLeft = history.scrollWidth
+      input.scrollLeft = input.scrollWidth
+    },
+    [val, valHistory]
+  )
   const handleKeyDown = useCallback(
     (evt: globalThis.KeyboardEvent) => {
       const { code, key } = evt
@@ -138,19 +152,14 @@ const Calculator: FC<CalCulatorProps> = ({
       window.removeEventListener('keydown', handleKeyDown)
     }
   }, [handleKeyDown])
-  useEffect(() => {
-    if (val.match(/=/)) {
-      // setValHistory((state) => [...state, val]);
-    }
-  }, [val])
   return (
     <Container {...calProps}>
       <DisplayResult {...displayProps}>
         <div className="top">
-          <input value={valHistory[valHistory.length - 1]} readOnly />
+          <input value={valHistory[valHistory.length - 1]} readOnly ref={historyRef} />
         </div>
         <div className="input">
-          <input value={val} readOnly />
+          <input value={val} readOnly ref={inputRef} />
         </div>
       </DisplayResult>
       {keys.map(({ label, style, val }) => (

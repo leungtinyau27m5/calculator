@@ -1,4 +1,6 @@
 import MyThemeProvider from "@/providers/MyThemeProvider";
+import { AppProps } from "next/dist/next-server/lib/router/router";
+import { FC } from "react";
 import { createGlobalStyle } from "styled-components";
 
 const GlobalStyles = createGlobalStyle`
@@ -18,7 +20,7 @@ html, body {
 }
 `;
 
-function MyApp({ Component, pageProps }) {
+const MyApp: FC<AppProps> = ({ Component, pageProps }) => {
   return (
     <>
       <MyThemeProvider>

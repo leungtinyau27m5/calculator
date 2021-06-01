@@ -1,4 +1,5 @@
 import Calculator from "@/components/calculator/Calculator";
+import { FC } from "react";
 import styled from "styled-components";
 
 const Container = styled.div`
@@ -7,10 +8,12 @@ const Container = styled.div`
   height: 100%;
 `;
 
-export default function Home() {
+const Home: FC = () => {
   return (
     <Container>
-      <Calculator variant="expanded" calProps={{ style: { width: 370 } }}></Calculator>
+      <Calculator variant="expanded" calProps={{ style: { width: "100%" } }}></Calculator>
     </Container>
   );
 }
+
+export default Home

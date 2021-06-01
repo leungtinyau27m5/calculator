@@ -232,6 +232,7 @@ export const keyMap: KeyMap = {
       keyCode: ["Numpad0", "Digit0"],
       style: {
         gridColumnStart: 1,
+        gridRowStart: 7
       },
       val: {
         code: "Digit0",
@@ -349,6 +350,10 @@ export const keyMap: KeyMap = {
     {
       label: "00",
       keyCode: ["Custom00"],
+      style: {
+        gridColumnStart: 3,
+        gridRowStart: 7
+      },
       val: {
         code: "Custom00",
         key: "00",
@@ -357,6 +362,10 @@ export const keyMap: KeyMap = {
     {
       label: ".",
       keyCode: ["NumpadDecimal", "Period"],
+      style: {
+        gridColumnStart: 2,
+        gridRowStart: 7
+      },
       val: {
         code: "NumpadDecimal",
         key: ".",
@@ -474,30 +483,30 @@ export const keyMap: KeyMap = {
         key: ")",
       },
     },
-    {
-      label: "←",
-      keyCode: [],
-      style: {
-        gridRowStart: 3,
-        gridColumnStart: 1,
-      },
-      val: {
-        code: "ArrowLeft",
-        key: "arrowleft",
-      },
-    },
-    {
-      label: "→",
-      keyCode: [],
-      style: {
-        gridRowStart: 3,
-        gridColumnStart: 2,
-      },
-      val: {
-        code: "ArrowRight",
-        key: "arrowright",
-      },
-    },
+    // {
+    //   label: "←",
+    //   keyCode: [],
+    //   style: {
+    //     gridRowStart: 3,
+    //     gridColumnStart: 1,
+    //   },
+    //   val: {
+    //     code: "ArrowLeft",
+    //     key: "arrowleft",
+    //   },
+    // },
+    // {
+    //   label: "→",
+    //   keyCode: [],
+    //   style: {
+    //     gridRowStart: 3,
+    //     gridColumnStart: 2,
+    //   },
+    //   val: {
+    //     code: "ArrowRight",
+    //     key: "arrowright",
+    //   },
+    // },
   ],
 };
 
