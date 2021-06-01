@@ -1,9 +1,9 @@
-import { keyMap } from "@/constants/calculatorKeys";
-import { calculation } from "@/helpers/calculation";
-import { isValidateKey } from "@/helpers/isValidateKey";
-import { FC, HTMLAttributes, useEffect, useReducer, useState } from "react";
-import styled from "styled-components";
-import Button from "../buttons/Button";
+import { keyMap } from '@/constants/calculatorKeys'
+import { calculation } from '@/helpers/calculation'
+import { isValidateKey } from '@/helpers/isValidateKey'
+import { FC, HTMLAttributes, useCallback, useEffect, useReducer, useState } from 'react'
+import styled from 'styled-components'
+import Button from '../buttons/Button'
 
 const Container = styled.div`
   display: grid;
@@ -11,7 +11,7 @@ const Container = styled.div`
   grid-template-rows: 1fr;
   row-gap: 2px;
   column-gap: 2px;
-`;
+`
 
 const DisplayResult = styled.div`
   display: grid;
@@ -52,106 +52,97 @@ const DisplayResult = styled.div`
       font-size: 1.25rem;
     }
   }
-`;
+`
 
-const reducer = (
-  state: string,
-  action: { type: string; payload?: any }
-): string => {
-  const { type, payload } = action;
+const reducer = (state: string, action: { type: string; payload?: any }): string => {
+  const { type, payload } = action
   const lastIsNumber = (): boolean => {
-    if (state === "") return false;
-    return state.match(/\d+$/g) ? true : false;
-  };
+    if (state === '') return false
+    return state.match(/\d+$/g) ? true : false
+  }
   const lastIsOperator = (): boolean => {
-    if (state === "") return false;
-    return state.match(/[\*\-\+\/]\s$/) ? true : false;
-  };
+    if (state === '') return false
+    return state.match(/[\*\-\+\/]\s$/) ? true : false
+  }
   const lastIsCloseBucket = (): boolean => {
-    return state.match(/\)\s$/) ? true : false;
-  };
+    return state.match(/\)\s$/) ? true : false
+  }
   switch (type) {
-    case "+":
-    case "-":
-    case "/":
-    case "*": {
-      return lastIsNumber()
-        ? `${state} ${type} `
-        : lastIsCloseBucket()
-        ? `${state}${type} `
-        : state;
+    case '+':
+    case '-':
+    case '/':
+    case '*': {
+      return lastIsNumber() ? `${state} ${type} ` : lastIsCloseBucket() ? `${state}${type} ` : state
     }
-    case "(": {
-      return state === "" || lastIsOperator()
+    case '(': {
+      return state === '' || lastIsOperator()
         ? `${state}${type} `
         : lastIsNumber()
         ? `${state} * ${type} `
-        : state;
+        : state
     }
-    case ")": {
-      return lastIsNumber()
-        ? `${state} ${type} `
-        : state.match(/\)\s$/)
-        ? `${state}${type}`
-        : state;
+    case ')': {
+      return lastIsNumber() ? `${state} ${type} ` : state.match(/\)\s$/) ? `${state}${type}` : state
     }
-    case "backspace": {
-      let str = state;
-      if (str[str.length - 1] === " ") str = str.slice(0, str.length - 3);
-      else str = str.slice(0, str.length - 1);
-      return str;
+    case 'backspace': {
+      let str = state
+      if (str[str.length - 1] === ' ') str = str.slice(0, str.length - 3)
+      else str = str.slice(0, str.length - 1)
+      return str
     }
-    case "enter": {
-      const val = calculation(state);
+    case 'enter': {
+      const val = calculation(state)
       return val
       // return `${state} = ${val}`;
     }
-    case "escape": {
-      return "";
+    case 'escape': {
+      return ''
     }
-    case "_": {
-      return state;
+    case '_': {
+      return state
     }
     default:
-      return lastIsCloseBucket() ? `${state} * ${type}` : `${state}${type}`;
+      return lastIsCloseBucket() ? `${state} * ${type}` : `${state}${type}`
   }
-};
+}
 
-const initState: string = "";
+const initState = ''
 
 const Calculator: FC<CalCulatorProps> = ({
-  variant = "normal",
+  variant = 'normal',
   calProps,
   displayProps,
   keyProps,
 }) => {
-  const keys = keyMap[variant];
-  const [val, dispatchVal] = useReducer(reducer, initState);
-  const [answer, setAnswer] = useState("");
-  const [valHistory, setValHistory] = useState([""]);
-  const handleKeyDown = (evt: globalThis.KeyboardEvent) => {
-    const { code, key } = evt;
-    updateResult({ code, key });
-  };
-  const updateResult = ({ code = "", key = "" }) => {
-    const isValid = isValidateKey({ code });
-    if (!isValid) return;
+  const keys = keyMap[variant]
+  const [val, dispatchVal] = useReducer(reducer, initState)
+  const [answer, setAnswer] = useState('')
+  const [valHistory, setValHistory] = useState([''])
+  const updateResult = useCallback(({ code = '', key = '' }) => {
+    const isValid = isValidateKey({ code })
+    if (!isValid) return
     dispatchVal({
       type: key.toLowerCase(),
-    });
-  };
+    })
+  }, [])
+  const handleKeyDown = useCallback(
+    (evt: globalThis.KeyboardEvent) => {
+      const { code, key } = evt
+      updateResult({ code, key })
+    },
+    [updateResult]
+  )
   useEffect(() => {
-    window.addEventListener("keydown", handleKeyDown);
+    window.addEventListener('keydown', handleKeyDown)
     return () => {
-      window.removeEventListener("keydown", handleKeyDown);
-    };
-  }, []);
-  useEffect(() => {
-    if (val.match(/\=/)) {
-      // setValHistory((state) => [...state, val]);
-      
+      window.removeEventListener('keydown', handleKeyDown)
     }
-  }, [val]);
+  }, [handleKeyDown])
+  useEffect(() => {
+    if (val.match(/=/)) {
+      // setValHistory((state) => [...state, val]);
+    }
+  }, [val])
   return (
     <Container {...calProps}>
       <DisplayResult {...displayProps}>
@@ -173,14 +164,14 @@ const Calculator: FC<CalCulatorProps> = ({
         </Button>
       ))}
     </Container>
-  );
-};
-
-export interface CalCulatorProps {
-  variant?: "normal" | "expanded";
-  displayProps?: HTMLAttributes<HTMLDivElement>;
-  calProps?: HTMLAttributes<HTMLDivElement>;
-  keyProps?: HTMLAttributes<HTMLButtonElement>;
+  )
 }
 
-export default Calculator;
+export interface CalCulatorProps {
+  variant?: 'normal' | 'expanded'
+  displayProps?: HTMLAttributes<HTMLDivElement>
+  calProps?: HTMLAttributes<HTMLDivElement>
+  keyProps?: HTMLAttributes<HTMLButtonElement>
+}
+
+export default Calculator
