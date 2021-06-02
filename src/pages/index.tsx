@@ -1,6 +1,8 @@
 import Button from '@/components/buttons/Button'
 // import Calculator from '@/components/calculator/Calculator'
 import FormControl from '@/components/formControl/FormControl'
+import { getAVD, getContractFee, getLoanLawerFee } from '@/helpers/fees'
+import { formatCurrencyWithPlaces } from '@/helpers/formatter'
 import { FC, useEffect, useReducer, useState } from 'react'
 import styled from 'styled-components'
 
@@ -75,33 +77,40 @@ const initFormEle = {
   loanAmount: 360,
   loanPeriod: 25,
   interestRate: 3,
+  isFirstTime: true,
 }
 
 const formEleReducer = (
   state: PropertyCalculationState,
-  action: { type: keyof PropertyCalculationState; payload?: number }
+  action: { type: keyof PropertyCalculationState; payload?: unknown }
 ): PropertyCalculationState => {
   const { type, payload } = action
   const { loanRate, propertyValue } = state
   switch (type) {
     case 'propertyValue': {
-      return { ...state, propertyValue: payload, loanAmount: (payload * loanRate) / 100 }
+      const p = Number(payload)
+      return { ...state, propertyValue: p, loanAmount: (p * loanRate) / 100 }
     }
     case 'loanRate': {
-      if (payload < 1 || payload > 100) return state
-      return { ...state, loanRate: payload, loanAmount: (payload * propertyValue) / 100 }
+      const p = Number(payload)
+      if (p > 100 || p < -1) return state
+      return { ...state, loanRate: p, loanAmount: (p * propertyValue) / 100 }
     }
     case 'loanAmount': {
-      if (payload > propertyValue) return state
-      return { ...state, loanAmount: payload, loanRate: (payload / propertyValue) * 100 }
+      const p = Number(payload)
+      return { ...state, loanAmount: p, loanRate: (p / propertyValue) * 100 }
     }
     case 'interestRate': {
-      if (payload < 1 || payload > 10) return state
-      return { ...state, interestRate: payload }
+      const p = Number(payload)
+      return { ...state, interestRate: p}
     }
     case 'loanPeriod': {
-      if (payload < 1) return state
-      return { ...state, loanPeriod: payload }
+      const p = Number(payload)
+      if (p < 1) return {...state, loanPeriod: 1}
+      return { ...state, loanPeriod: p }
+    }
+    case 'isFirstTime': {
+      return { ...state, isFirstTime: payload as boolean }
     }
     default:
       return state
@@ -114,30 +123,48 @@ const Home: FC = () => {
     monthlyContribution: 0,
     firstPayment: 0,
     loanAmount: 0,
-    totalInterest: 0
+    totalInterest: 0,
+    avdFee: 0,
+    agentCommissionFee: 0,
+    lawerFee: 0,
+    totalFee: 0
   })
   const [helperText, setHelperText] = useState('')
   const hanldeOnChange = (key: keyof PropertyCalculationState, val: string): void => {
-    if (!val.match(/^\d+$/g) && val.length > 0) return
     dispacthFormEle({
       type: key,
-      payload: Number(val),
+      payload: val,
+    })
+  }
+  const handleSelectChange = (val: string): void => {
+    dispacthFormEle({
+      type: "isFirstTime",
+      payload: val === "1" ? true : false
     })
   }
   const caluclateLoan = (): void => {
-    const { propertyValue, loanAmount, loanPeriod, interestRate } = formEle
+    const { propertyValue, loanAmount, loanPeriod, interestRate, isFirstTime } = formEle
     const monthlyInterest = interestRate / 12 / 100
     const totalPeriod = loanPeriod * 12
     const val = Math.round(
-      (loanAmount * 10000) *
-      (monthlyInterest *
-        (Math.pow(1 + monthlyInterest, totalPeriod) /
-          (Math.pow(1 + monthlyInterest, totalPeriod) - 1))))
+      loanAmount *
+        10000 *
+        (monthlyInterest *
+          (Math.pow(1 + monthlyInterest, totalPeriod) /
+            (Math.pow(1 + monthlyInterest, totalPeriod) - 1)))
+    )
+    const avdFee = getAVD(propertyValue * 10000, isFirstTime)
+    const lawerFee = getContractFee(propertyValue * 10000) + getLoanLawerFee(propertyValue * 10000)
+    const agentCommissionFee = propertyValue * 10000 * 0.01
     setResult({
       monthlyContribution: val,
-      firstPayment: propertyValue - loanAmount,
+      firstPayment: (propertyValue - loanAmount),
       loanAmount: loanAmount,
-      totalInterest: Math.round((val * totalPeriod - (loanAmount * 10000)) / 10000)
+      totalInterest: Math.round((val * totalPeriod - loanAmount * 10000) / 10000),
+      avdFee: avdFee / 10000,
+      agentCommissionFee: agentCommissionFee / 10000,
+      lawerFee: lawerFee / 10000,
+      totalFee: (avdFee + lawerFee + agentCommissionFee) / 10000
     })
   }
   useEffect(() => {
@@ -160,8 +187,6 @@ const Home: FC = () => {
           <FormControl label={<span>貸款率(%)</span>}>
             <input
               type="text"
-              min="1"
-              max="95"
               placeholder="貸款率(%)"
               value={formEle.loanRate}
               onChange={(evt) => hanldeOnChange('loanRate', evt.target.value)}
@@ -191,6 +216,12 @@ const Home: FC = () => {
               onChange={(evt) => hanldeOnChange('interestRate', evt.target.value)}
             />
           </FormControl>
+          <FormControl label={<span>首置</span>}>
+            <select onBlur={(evt) => handleSelectChange(evt.target.value)}>
+              <option value={1}>是</option>
+              <option value={0}>否</option>
+            </select>
+          </FormControl>
           <FormControl
             style={{
               gridRowStart: 4,
@@ -217,7 +248,7 @@ const Home: FC = () => {
             <span>總覽</span>
             <div className="table">
               <div>每月供款</div>
-              <div>{result.monthlyContribution}</div>
+              <div>{formatCurrencyWithPlaces(result.monthlyContribution)}</div>
               <div>首期</div>
               <div>{result.firstPayment}萬元</div>
               <div>貸款額</div>
@@ -228,13 +259,13 @@ const Home: FC = () => {
             <span>其他開支</span>
             <div className="table">
               <div>印花稅</div>
-              <div></div>
+              <div>{result.avdFee}萬元</div>
               <div>律師費</div>
-              <div></div>
+              <div>{result.lawerFee}萬元</div>
               <div>代理佣金</div>
-              <div></div>
+              <div>{result.agentCommissionFee}萬元</div>
               <div>總開支</div>
-              <div></div>
+              <div>{result.totalFee}萬元</div>
             </div>
           </div>
         </div>
@@ -254,6 +285,7 @@ export interface PropertyCalculationState {
   loanAmount: number
   loanPeriod: number
   interestRate: number
+  isFirstTime: boolean
 }
 
 export default Home

@@ -5,7 +5,7 @@ const StyledRow = styled.div`
   padding: 8px;
   width: 100%;
   color: ${(props) => props.theme.palette.contrastText};
-  input {
+  input, select {
     background-color: ${(props) => props.theme.palette.primary};
     color: inherit;
     padding: 8px;
@@ -13,7 +13,8 @@ const StyledRow = styled.div`
     border: none;
     min-width: 180px;
     width: 100%;
-    height: 100%;
+    /* height: 100%; */
+    height: 56px;
     border: none;
     &::placeholder {
       color: ${(props) => props.theme.palette.secondaryText};

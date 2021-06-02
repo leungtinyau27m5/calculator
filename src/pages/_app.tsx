@@ -6,17 +6,17 @@ import { createGlobalStyle } from "styled-components";
 const GlobalStyles = createGlobalStyle`
 html, body {
   width: 100%;
-  height: 100%;
-  height: -webkit-fill-available;
+  min-height: 100%;
   padding: 0;
   margin: 0;
+  display: flex;
 }
 * {
   box-sizing: border-box;
 }
 #__next {
-  width: 100%;
-  height: 100%;
+  flex: 1;
+  min-height: 100%;
   @media (max-width: 768px) {
   }
 }
